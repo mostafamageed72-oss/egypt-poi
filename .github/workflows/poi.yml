@@ -1,0 +1,23 @@
+name: Egypt POI extract
+on:
+  schedule: [{ cron: "30 1 * * *" }]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install osmium
+      - name: Download Egypt extract (Geofabrik)
+        run: curl -fL --retry 3 -o egypt.osm.pbf https://download.geofabrik.de/africa/egypt-latest.osm.pbf
+      - run: python build_poi.py egypt.osm.pbf data
+      - name: Commit
+        run: |
+          git config user.name "poi-bot"; git config user.email "poi-bot@users.noreply.github.com"
+          git add data
+          git commit -m "POI extract $(date -u +%F)" || echo "no changes"
+          git push
